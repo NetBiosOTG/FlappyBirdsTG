@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flappy Bird - Telegram Mini App</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .container {
+            width: 100%;
+            max-width: 400px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #ff6b6b, #ffa500);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 24px;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+        
+        .header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        
+        .game-container {
+            position: relative;
+            width: 100%;
+            height: 600px;
+            background: #f0f0f0;
+        }
+        
+        .game-frame {
+            width: 100%;
+            height: 100%;
+            border: none;
+            background: white;
+        }
+        
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            color: #666;
+        }
+        
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #ff6b6b;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 16px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .controls {
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #ff6b6b, #ffa500);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 8px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(255, 107, 107, 0.3);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        .info {
+            background: rgba(255, 255, 255, 0.8);
+            padding: 16px;
+            margin: 16px 0;
+            border-radius: 12px;
+            font-size: 14px;
+            color: #666;
+            text-align: center;
+        }
+        
+        @media (max-width: 480px) {
+            .container {
+                max-width: 100%;
+                margin: 0;
+                border-radius: 0;
+            }
+            
+            .game-container {
+                height: 500px;
+            }
+            
+            .header h1 {
+                font-size: 20px;
+            }
+            
+            body {
+                padding: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🐦 Flappy Bird</h1>
+            <p>Tap to play the classic game!</p>
+        </div>
+        
+        <div class="game-container">
+            <div class="loading" id="loading">
+                <div class="loading-spinner"></div>
+                <p>Loading game...</p>
+            </div>
+            <iframe 
+                id="gameFrame" 
+                class="game-frame" 
+                src="https://emupedia.net/emupedia-game-flappy-bird/"
+                style="display: none;"
+                allowfullscreen>
+            </iframe>
+        </div>
+        
+        <div class="controls">
+            <button class="btn" onclick="reloadGame()">🔄 Reload Game</button>
+            <button class="btn" onclick="shareScore()">📤 Share</button>
+        </div>
+        
+        <div class="info">
+            <p>💡 Tap the screen to make the bird fly and avoid the pipes!</p>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Telegram Web App
+        const tg = window.Telegram.WebApp;
+        
+        // Configure the app
+        tg.ready();
+        tg.expand();
+        
+        // Apply Telegram theme
+        document.body.style.backgroundColor = tg.themeParams.bg_color || '#667eea';
+        
+        // Handle iframe loading
+        const gameFrame = document.getElementById('gameFrame');
+        const loading = document.getElementById('loading');
+        
+        gameFrame.onload = function() {
+            loading.style.display = 'none';
+            gameFrame.style.display = 'block';
+        };
+        
+        // Show loading error if iframe fails to load
+        setTimeout(() => {
+            if (gameFrame.style.display === 'none') {
+                loading.innerHTML = '<p>❌ Failed to load game. Please check your connection.</p>';
+            }
+        }, 10000);
+        
+        // Functions for buttons
+        function reloadGame() {
+            loading.style.display = 'block';
+            gameFrame.style.display = 'none';
+            gameFrame.src = gameFrame.src;
+        }
+        
+        function shareScore() {
+            const shareText = "🐦 Playing Flappy Bird in Telegram! Can you beat my score?";
+            
+            if (tg.initData) {
+                // Share within Telegram
+                tg.showAlert("Share this mini app with your friends!");
+            } else {
+                // Fallback for web browsers
+                if (navigator.share) {
+                    navigator.share({
+                        title: 'Flappy Bird - Telegram Mini App',
+                        text: shareText,
+                        url: window.location.href
+                    });
+                } else {
+                    // Copy to clipboard
+                    navigator.clipboard.writeText(shareText + ' ' + window.location.href);
+                    alert('Link copied to clipboard!');
+                }
+            }
+        }
+        
+        // Handle back button
+        tg.onEvent('backButtonClicked', function() {
+            tg.close();
+        });
+        
+        // Optimize for mobile
+        function optimizeForMobile() {
+            const viewport = document.querySelector('meta[name="viewport"]');
+            if (window.innerWidth <= 480) {
+                viewport.content = "width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no";
+            }
+        }
+        
+        window.addEventListener('resize', optimizeForMobile);
+        optimizeForMobile();
+        
+        // Handle visibility changes
+        document.addEventListener('visibilitychange', function() {
+            if (document.hidden) {
+                // App is hidden, could pause game if needed
+                console.log('App hidden');
+            } else {
+                // App is visible again
+                console.log('App visible');
+            }
+        });
+    </script>
+</body>
+</html>
